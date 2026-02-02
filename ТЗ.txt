@@ -1,0 +1,213 @@
+Telegram-бот для бронирования машин
+
+Функциональные требования
+Пользовательские функции:
+Регистрация и авторизация пользователей:
+
+Возможность регистрации по номеру телефона
+Хранение профиля пользователя в БД (имя, телефон, история бронирований).
+Просмотр доступных автомобилей:
+
+Список машин с фильтрацией по типу (седан, внедорожник, и т.д.), дате, и цене.
+Возможность посмотреть детальную информацию о машине (марка, модель, фото, цена, описание).
+Бронирование автомобиля:
+
+Выбор машины и дат бронирования.
+Проверка доступности авто на выбранный период.
+Подтверждение бронирования.
+Оплата:
+
+Оплата через Telegram Pay, ЮKassa или другой платежный шлюз.
+Уведомления:
+
+Уведомление о подтверждении бронирования.
+Напоминание о начале и окончании бронирования.
+История бронирований:
+
+Просмотр активных и завершенных бронирований.
+Функции для администраторов:
+Админ-панель в Telegram (через команды или веб-интерфейс):
+
+Добавление/удаление/редактирование автомобилей.
+Просмотр списка активных бронирований.
+Изменение статуса бронирования (например, отмена).
+Генерация отчетов о бронированиях.
+Модерация пользователей:
+
+Просмотр списка пользователей.
+Блокировка/разблокировка пользователей.
+Настройка цен и условий:
+
+Изменение цен на автомобили.
+Установка скидок или акций.
+Технические требования
+Технологический стек:
+Язык программирования: Python.
+Фреймворк для бота: pyTelegramBotAPI или  любая другая библиотека
+База данных: PostgreSQL или SQLite.
+Оплата: ЮKassa или другая система оплаты.
+Админ-панель: Telegram-бот (с командами)
+Структура БД:
+Пользователи:
+
+id, telegram_id, name, phone, created_at
+Автомобили:
+
+id, brand, model, type, description, price_per_day, is_available, image_url.
+Бронирования:
+
+id, user_id, car_id, start_date, end_date, total_price, payment_status.
+Этапы разработки
+Проектирование:
+
+Составить схему базы данных.
+Спроектировать основные сценарии взаимодействия.
+Разработка бота:
+
+Настроить Telegram-бота с использованием BotFather.
+Реализовать регистрацию и авторизацию пользователей.
+Создание функционала бронирования:
+
+Добавить команду для просмотра машин.
+Реализовать фильтры поиска.
+Добавить проверку доступности авто.
+Интеграция с платежной системой:
+
+Настроить Telegram Payments API или другой шлюз.
+Реализовать подтверждение платежей.
+Админ-панель:
+
+Добавить команды для управления машинами и бронированиями.
+Тестирование:
+
+Проверить функционал и стабильность работы.
+Подсказки по реализации
+Регистрация бота:
+
+Зарегистрируйте бота в Telegram через BotFather.
+Получите токен API.
+Настройка проекта:
+
+Создайте виртуальное окружение и установите зависимости
+Основные моменты работы с pyTelegramBotAPI
+Установка: Если ещё не установили библиотеку, установите её:
+
+pip install pytelegrambotapi
+Инициализация бота:
+
+import telebot
+
+bot = telebot.TeleBot("YOUR_BOT_TOKEN")
+Хэндлеры для обработки сообщений: Все команды и текстовые сообщения обрабатываются через декораторы:
+
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "Добро пожаловать! Напишите /help для получения списка команд.")
+Реализация функций для бота бронирования
+Регистрация пользователя
+Создайте хэндлер для получения номера телефона. Для этого можно использовать кнопку с request_contact=True:
+
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+
+@bot.message_handler(commands=['register'])
+def register_user(message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    button = KeyboardButton("Отправить контакт", request_contact=True)
+    markup.add(button)
+    bot.send_message(message.chat.id, "Отправьте ваш контакт для регистрации.", reply_markup=markup)
+
+@bot.message_handler(content_types=['contact'])
+def save_contact(message):
+    if message.contact is not None:
+        user_phone = message.contact.phone_number
+        user_name = message.contact.first_name
+        # Сохраните данные в базу
+        bot.send_message(message.chat.id, f"Регистрация завершена! Ваш номер: {user_phone}.")
+Просмотр автомобилей
+Представьте список автомобилей в виде inline-кнопок:
+
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@bot.message_handler(commands=['cars'])
+def show_cars(message):
+    # Пример списка авто из базы
+    cars = [
+        {"id": 1, "name": "Toyota Camry", "price": 3000},
+        {"id": 2, "name": "BMW X5", "price": 5000},
+    ]
+    markup = InlineKeyboardMarkup()
+    for car in cars:
+        markup.add(InlineKeyboardButton(f"{car['name']} — {car['price']} руб/день", callback_data=f"car_{car['id']}"))
+    bot.send_message(message.chat.id, "Доступные автомобили:", reply_markup=markup)
+
+
+Просмотр автомобилей
+Представьте список автомобилей в виде inline-кнопок:
+
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@bot.message_handler(commands=['cars'])
+def show_cars(message):
+    # Пример списка авто из базы
+    cars = [
+        {"id": 1, "name": "Toyota Camry", "price": 3000},
+        {"id": 2, "name": "BMW X5", "price": 5000},
+    ]
+    markup = InlineKeyboardMarkup()
+    for car in cars:
+        markup.add(InlineKeyboardButton(f"{car['name']} — {car['price']} руб/день", callback_data=f"car_{car['id']}"))
+    bot.send_message(message.chat.id, "Доступные автомобили:", reply_markup=markup)
+Обработка оплаты
+Интеграция с Telegram Payments:
+
+Настройте провайдера оплаты (например, ЮKassa) через BotFather.
+Реализуйте отправку счета:
+from telebot.types import LabeledPrice
+
+@bot.message_handler(commands=['confirm'])
+def send_invoice(message):
+    booking = user_state.get(message.chat.id)
+    if booking:
+        price = 3000  # Подсчитайте сумму на основе даты и машины
+        prices = [LabeledPrice(label="Бронирование автомобиля", amount=price * 100)]  # В копейках
+        bot.send_invoice(
+            message.chat.id,
+            title="Оплата бронирования",
+            description="Оплатите бронирование вашего автомобиля.",
+            invoice_payload="booking_123",  # Уникальный ID для платежа
+            provider_token="PROVIDER_TOKEN",  # Ваш токен
+            currency="RUB",
+            prices=prices,
+            start_parameter="test-payment"
+        )
+    else:
+        bot.send_message(message.chat.id, "Сначала выберите машину и даты.")
+Админ-функции
+Пример добавления новой машины:
+
+@bot.message_handler(commands=['add_car'])
+def add_car(message):
+    if message.from_user.id in [ADMIN_ID]:  # Проверьте, админ ли это
+        bot.send_message(message.chat.id, "Введите данные авто в формате: Марка, модель, цена за день")
+        bot.register_next_step_handler(message, save_car)
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для этой команды.")
+
+def save_car(message):
+    try:
+        data = message.text.split(", ")
+        car = {"brand": data[0], "model": data[1], "price": int(data[2])}
+        # Сохраните машину в базу
+        bot.send_message(message.chat.id, f"Автомобиль {car['brand']} {car['model']} добавлен.")
+    except:
+        bot.send_message(message.chat.id, "Ошибка ввода. Попробуйте ещё раз.")
+Разделение логики: Разделите ваш код на модули:
+
+handlers.py: обработка команд.
+db.py: функции для работы с базой данных.
+payments.py: интеграция с платежной системой.
+Логи: Используйте встроенную библиотеку logging для удобного отслеживания работы бота:
+
+import logging
+logging.basicConfig(level=logging.INFO)
